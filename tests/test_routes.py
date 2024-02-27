@@ -8,10 +8,12 @@ from unittest import TestCase
 from wsgi import app
 from service.common import status
 from service.models import db, Account
+from .factories import AccountFactory
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
 )
+BASE_URL = "/accounts"
 
 
 ######################################################################
@@ -55,4 +57,28 @@ class TestYourResourceService(TestCase):
         resp = self.client.get("/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
-    # Todo: Add your test cases here...
+    def test_create_account(self):
+        """It should Create a new Account"""
+        test_account = AccountFactory()
+        logging.debug("Test Account: %s", test_account.serialize())
+        response = self.client.post(BASE_URL, json=test_account.serialize())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Make sure location header is set
+        location = response.headers.get("Location", None)
+        self.assertIsNotNone(location)
+
+        # Check the data is correct
+        new_account = response.get_json()
+        self.assertEqual(new_account["name"], test_account.name)
+        self.assertEqual(new_account["address"], test_account.address)
+        self.assertEqual(new_account["email"], test_account.email)
+
+        # Todo: Uncomment this code when get_accounts is implemented
+        # # Check that the location header was correct
+        # response = self.client.get(location)
+        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # new_account = response.get_json()
+        # self.assertEqual(new_account["name"], test_account.name)
+        # self.assertEqual(new_account["address"], test_account.address)
+        # self.assertEqual(new_account["email"], test_account.email)
